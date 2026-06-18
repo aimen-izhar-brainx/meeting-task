@@ -1,0 +1,261 @@
+sections:
+  - id: title_description
+    title: Proper Title and Description
+    description: PR title and description should clearly explain what changed, why, and how.
+    checks:
+      - Title is self-explanatory.
+      - Description explains what changed.
+      - Description explains why it changed.
+      - Description explains how it was implemented.
+      - UI evidence and testing notes are included where applicable.
+
+  - id: single_responsibility
+    title: Single Responsibility
+    description: PR should focus on one feature, bug fix, or improvement.
+    checks:
+      - PR has one clear purpose.
+      - PR avoids unrelated file changes.
+      - PR does not mix unrelated refactoring, UI, logic, and bug fixes.
+      - Formatting-only changes are not mixed with feature work.
+
+  - id: clean_scalable_architecture
+    title: Clean and Scalable Architecture
+    description: PR should respect the existing project architecture and should not break the established code structure.
+    checks:
+      - Analyzes and follows the existing project scope, code structure, and architecture.
+      - Does not bypass the established architecture.
+      - Supports scalable architectures such as MVVM, Clean Architecture, MVC, MVP, MVI, or Singleton where applicable.
+      - Keeps UI, ViewModels, business logic, data sources, models, repositories, managers, services, and utilities separated.
+      - Does not introduce tight coupling between unrelated features/modules.
+      - Does not place business logic inside Activities, Fragments, Composables, or build/render methods.
+      - New files are placed in the correct feature/layer packages.
+      - Uses existing architectural patterns consistently.
+
+  - id: production_safe_crash_free
+    title: Production-Safe and Crash-Free Code
+    description: Code should avoid preventable runtime crashes and unsafe assumptions.
+    checks:
+      - Avoids unsafe non-null assertion using !!.
+      - Avoids unsafe casts using as unless fully guaranteed; prefers as? with null handling.
+      - Handles null values safely.
+      - Guards against empty lists, invalid indexes, and invalid states.
+      - Does not assume API data, Intent/Bundle extras, navigation arguments, SharedPreferences/DataStore, or remote config values are always valid.
+      - Handles lifecycle edge cases safely (isAdded, view != null, viewLifecycleOwner).
+      - Uses repeatOnLifecycle/collectAsStateWithLifecycle for Flow collection tied to the UI lifecycle.
+      - Cancels coroutines/Jobs and disposes listeners, observers, ViewBinding references, and animation resources properly.
+
+  - id: managers_services
+    title: Managers and Services
+    description: Dependent and reusable logic should be handled through proper manager, service, and repository classes.
+    checks:
+      - Uses managers/services/repositories for SharedPreferences/DataStore, API, database, cache, permissions, notifications, files, and similar reusable dependencies.
+      - Does not duplicate API, storage, database, permission, or cache logic inside Activities/Fragments/Composables/ViewModels.
+      - Does not call low-level platform/storage/network APIs directly from UI when a manager/service exists.
+      - Managers/services have focused responsibilities.
+      - Avoids God classes that manage unrelated concerns.
+      - Reuses existing managers/services instead of creating duplicate implementations.
+      - Accesses managers/services consistently with the project's DI approach (Hilt/Koin/Dagger/manual).
+
+  - id: graceful_error_handling
+    title: Graceful Error Handling
+    description: Errors should be handled gracefully without crashing the app or exposing sensitive details.
+    checks:
+      - Uses try/catch or runCatching/Result around risky operations.
+      - Shows user-friendly error messages.
+      - Does not expose stack traces, tokens, or internal errors in UI.
+      - Handles network, parsing, permission, platform, database, and storage errors.
+      - Provides fallback UI for failed states.
+      - Avoids silent failures (empty catch blocks).
+      - Avoids infinite loaders when operations fail.
+
+  - id: model_mapping_defaults
+    title: Model Mapping with Default Values
+    description: API data should be mapped into strongly typed models with safe default values.
+    checks:
+      - Avoids raw JSONObject/Map<String, Any?>/Bundle usage directly in UI.
+      - Uses strongly typed Kotlin data class models.
+      - Provides default values during JSON parsing.
+      - Handles nullable fields safely.
+      - Avoids unchecked/force casts in mapper functions.
+      - Keeps mapping logic inside the data/mapper layer.
+      - UI consumes typed domain models instead of raw API DTOs/maps.
+      - Safely parses lists, nested objects, enums, booleans, numbers, and dates.
+
+  - id: immutability_and_efficient_state
+    title: Immutability and Efficient State
+    description: Immutable models and efficient state handling should be used to avoid unnecessary allocation and recomposition.
+    checks:
+      - Prefers val over var and immutable data class models where possible.
+      - Compose state that should survive recomposition uses remember/rememberSaveable; derived values use derivedStateOf.
+      - Avoids recreating lambdas/objects/modifiers on every recomposition where they could be hoisted or remembered.
+      - Avoids allocating objects inside onDraw/onBindViewHolder or other frequently-called methods.
+      - Avoids unnecessary object recreation during RecyclerView rebinds or Compose recompositions.
+
+  - id: enums_sealed_classes
+    title: Enums / Sealed Classes
+    description: Enums and sealed classes should be used instead of hardcoded conditions.
+    checks:
+      - Uses enum class for fixed statuses, roles, filters, tabs, types, and actions.
+      - Uses sealed class/sealed interface for complex UI, API, or state cases where appropriate.
+      - Avoids hardcoded string comparisons in UI and business logic.
+      - Avoids repeated condition strings such as active, pending, completed, and error.
+      - Maps backend values into typed enums/sealed classes safely.
+      - Handles unknown enum values safely.
+      - Avoids spreading backend status strings directly across Composables/Fragments.
+
+  - id: utils_helper_classes
+    title: Utils and Helper Classes
+    description: Hardcoded values and duplicated utility logic should be moved into reusable utils/helper classes with const identifiers.
+    checks:
+      - Avoids hardcoded sizes, paddings, margins, date formatters, UI strings, and color codes inside Composables/layouts/Kotlin code.
+      - Uses reusable classes/objects for dimensions, paddings, margins, radius, durations, strings, theme tokens, validators, formatters, extensions, and date/time handling.
+      - Uses const val/object identifiers where possible.
+      - Avoids duplicated date/time formatting logic.
+      - Avoids unsafe date parsing without fallback handling.
+      - Keeps helper methods focused and reusable.
+      - Does not place business logic inside generic utility classes.
+
+  - id: theme_values_design_system
+    title: Theme Values and Design System Usage
+    description: UI should use theme values and shared design-system constants instead of hardcoded values.
+    checks:
+      - Uses MaterialTheme.colorScheme/typography (Compose) or app theme attrs/styles (XML) for colors and typography.
+      - Avoids hardcoded colors, font sizes, radius, shadows, and spacing.
+      - Avoids direct usage of raw framework colors unless justified.
+      - Uses shared constants for spacing, radius, dimensions, and durations.
+      - Supports dark mode where applicable.
+      - Keeps UI styling consistent with the app design system.
+
+  - id: state_management
+    title: State Management
+    description: State should be predictable, testable, and maintainable.
+    checks:
+      - Uses the project-approved state management approach (ViewModel + StateFlow/LiveData, MVI, etc.).
+      - Avoids unnecessary mutable state scattered outside the ViewModel.
+      - Does not store business logic inside Activities, Fragments, or Composables.
+      - Handles loading, success, empty, and error states.
+      - Avoids duplicated state flags where typed state is better.
+      - Collects Flows lifecycle-safely and cancels jobs/observers properly.
+      - Does not mix multiple state-management approaches in the same feature unless the architecture requires it.
+
+  - id: naming_conventions
+    title: Naming Conventions
+    description: Code should follow Kotlin, Android, and project naming conventions.
+    checks:
+      - Classes, enums, interfaces, and objects use PascalCase.
+      - Functions, variables, and parameters use camelCase.
+      - Resource files and package names use snake_case/lowercase.
+      - Names are meaningful and self-explanatory.
+      - Naming follows existing project conventions.
+
+  - id: unused_code_debug_logs
+    title: Unused Code, Debug Logs, and Imports
+    description: PR should not contain dead code, unused imports, temporary debugging artifacts, or unnecessary comments.
+    checks:
+      - Removes unused imports.
+      - Removes commented-out code.
+      - Removes unused variables, functions, and classes.
+      - Removes println/System.out.print statements (replace with Log/Timber if logging is necessary, otherwise remove).
+      - Log.* and Timber.* are allowed and must not be flagged as violations.
+      - Removes test-only code before merging.
+      - TODOs include context or tracking reference.
+      - Removes duplicated comments that do not add value.
+
+  - id: reusable_code
+    title: Reusable Code
+    description: Frequently used components should be separated to reduce duplication and dependency.
+    checks:
+      - Creates reusable components for frequently used buttons, text styles, app bars, text fields, dialogs, bottom sheets, empty/error/loading states, cards, and list items.
+      - Extracts repeated business logic into UseCases, repositories, managers, helpers, or extension functions.
+      - Avoids copy-pasted UI blocks.
+      - Avoids copy-pasted validation, formatting, navigation, and API handling logic.
+      - Reuses existing shared components before creating new ones.
+      - Keeps reusable components configurable but not over-engineered.
+      - Prefers composition over large condition-heavy screens.
+
+  - id: folder_structure
+    title: Folder Structure
+    description: Files should follow the existing project architecture and package structure.
+    checks:
+      - Follows existing project package structure.
+      - Uses feature-based, MVVM, clean architecture, MVC, MVP, or MVI structure consistently as applicable.
+      - Does not place repositories, models, managers, use cases, or business logic inside ui/view packages.
+      - Avoids dumping unrelated files into common/util/shared packages.
+      - File locations are predictable and maintainable.
+
+  - id: ui_responsiveness_layout_safety
+    title: UI Responsiveness and Layout Safety
+    description: UI should work safely across different devices, content lengths, and screen sizes.
+    checks:
+      - Avoids layout overflow/clipping.
+      - Handles long text, empty values, and small screens.
+      - Uses weight, LazyColumn/LazyRow, ConstraintLayout, or RecyclerView appropriately for lists and flexible layouts.
+      - Avoids fixed dp widths and heights unless required.
+      - Supports dynamic content safely.
+      - Respects window insets / safe areas.
+      - Provides contentDescription/accessibility labels for meaningful interactive elements.
+
+  - id: dependency_injection_consistency
+    title: Dependency Injection Consistency
+    description: Dependencies should be wired through the project's DI framework rather than constructed manually.
+    checks:
+      - New dependencies are injected through the project's DI framework (Hilt/Koin/Dagger).
+      - Avoids manual dependency creation (Repository(), ApiService(), Retrofit.Builder()) inside Activities, Fragments, Composables, ViewModels, or Managers.
+      - Uses constructor injection whenever possible.
+      - Avoids Service Locator patterns unless already established in the project.
+      - Scopes dependencies appropriately (Singleton, ActivityRetainedScoped, ViewModelScoped, etc.).
+      - Avoids injecting unnecessary dependencies.
+
+  - id: coroutine_flow_best_practices
+    title: Coroutine and Flow Best Practices
+    description: Coroutines and Flows should follow structured concurrency, proper dispatcher usage, and safe exception handling.
+    checks:
+      - Avoids GlobalScope.
+      - Avoids launching coroutines without lifecycle awareness.
+      - Prefers structured concurrency over ad-hoc coroutine launches.
+      - Uses appropriate dispatchers (IO, Default, Main) for the work being performed.
+      - Avoids nested coroutine launches where unnecessary.
+      - Handles Flow exceptions using catch.
+      - Uses stateIn/shareIn when appropriate for shared/hot flows.
+      - Avoids collecting the same Flow multiple times unnecessarily.
+      - Uses collectLatest when older emissions should be cancelled.
+
+  - id: localization_internationalization
+    title: Localization / Internationalization
+    description: User-facing text should be externalized to string resources with safe formatting instead of hardcoded or concatenated strings.
+    checks:
+      - No user-facing hardcoded strings in Composables, layouts, or Kotlin code.
+      - Uses strings.xml for user-facing text.
+      - Supports string formatting placeholders instead of string concatenation.
+      - Avoids concatenating strings to build user-facing text.
+
+  - id: navigation_safety
+    title: Navigation Safety
+    description: Navigation should use safe, typed arguments and guard against duplicate or unsafe navigation events.
+    checks:
+      - Uses typed navigation arguments where possible instead of manually serialized route strings.
+      - Validates incoming navigation arguments.
+      - Avoids passing large objects through navigation.
+      - Avoids duplicate navigation events.
+      - Prevents multiple rapid clicks from triggering repeated navigation.
+      - Handles deep links safely.
+
+  - id: memory_leak_prevention
+    title: Memory Leak Prevention
+    description: Code should avoid patterns that retain Context, Views, listeners, or resources beyond their intended lifecycle.
+    checks:
+      - Avoids holding Activity/Fragment Context in singleton objects.
+      - Avoids storing Views inside ViewModels.
+      - Removes listeners when no longer needed.
+      - Unregisters BroadcastReceivers.
+      - Releases Camera, MediaPlayer, and ExoPlayer resources.
+      - Avoids leaking coroutine scopes.
+
+  - id: compose_performance_recomposition
+    title: Performance and Recomposition Review (Compose)
+    description: Compose screens should avoid expensive work and unnecessary allocation during recomposition.
+    checks:
+      - Avoids expensive calculations directly inside Composables.
+      - Uses stable state objects.
+      - Uses remember appropriately for values that shouldn't be recomputed every recomposition.
+      - Avoids creating collections (filter/map/sorted) inline inside LazyColumn/LazyRow item builders during recomposition.
