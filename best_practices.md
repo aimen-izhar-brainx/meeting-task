@@ -169,6 +169,7 @@ Avoid hardcoded and duplicated utility logic by creating reusable utility/helper
 - Use `MaterialTheme.colorScheme` / `MaterialTheme.typography` in Compose, or `?attr/colorPrimary` and app theme styles in XML, instead of literal values.
 - Avoid hardcoded colors (`Color(0xFF...)`, `Color.Red`, `#FFFFFF` in XML), font sizes, radius, shadows, and spacing.
 - Avoid direct usage of raw framework colors unless explicitly justified.
+- Use `styles.xml`/`<style>` resources for shared UI component styling (buttons, text appearances, cards) instead of repeating the same set of XML attributes on every view instance.
 - Support dark mode (`isSystemInDarkTheme()`, `values-night/`) where the project supports it.
 - Keep UI styling consistent with the app's shared `Theme.kt` / `themes.xml` design system.
 
@@ -409,6 +410,136 @@ val activeUsers by remember(users) {
     derivedStateOf { users.filter { it.active } }
 }
 ```
+
+---
+
+## 24. PR Size (Lines of Code Limit)
+
+### Requirements
+
+- Total changed lines (added + removed) in a PR should not exceed **1500 lines**.
+- Large, unrelated changes (generated files, lockfiles, formatting-only diffs) should not be used to justify an oversized PR — split them out instead.
+- If a change genuinely cannot fit under the limit, it should be split into smaller, independently reviewable PRs (e.g. by layer, by screen, or behind a feature flag).
+- This is evaluated automatically against the PR diff; it does not require the model to estimate line counts.
+
+---
+
+## 25. Proper Usage of DataBinding / ViewBinding
+
+*(Not applicable to Java-only projects — this section applies wherever XML layouts back Kotlin Activities/Fragments/Adapters.)*
+
+### Requirements
+
+- Use ViewBinding or DataBinding instead of `findViewById` for view references.
+- Clear Fragment ViewBinding references in `onDestroyView` (`_binding = null`) to avoid leaking the view hierarchy.
+- Do not mix ViewBinding and DataBinding inconsistently within the same screen/module without a clear reason.
+- Keep DataBinding XML expressions presentation-only; avoid embedding business logic inside binding expressions or `@BindingAdapter`s.
+- Avoid holding a binding reference longer than the view's lifecycle.
+
+### Common Violation
+
+```kotlin
+val nameView = findViewById<TextView>(R.id.nameText)
+```
+
+Instead:
+
+```kotlin
+binding.nameText.text = user.name
+```
+
+---
+
+## 26. Use Early Exit (Guard Clauses)
+
+### Requirements
+
+- Prefer early `return`/`continue` for invalid or edge-case conditions instead of wrapping the main logic inside a large `if` block.
+- Avoid deeply nested `if`/`else` chains where a guard clause would flatten the logic.
+- Keep the "happy path" unindented and easy to scan.
+
+### Common Violation
+
+```kotlin
+fun process(user: User?) {
+    if (user != null) {
+        if (user.isActive) {
+            // actual logic, nested two levels deep
+        }
+    }
+}
+```
+
+Prefer:
+
+```kotlin
+fun process(user: User?) {
+    if (user == null) return
+    if (!user.isActive) return
+    // actual logic, unindented
+}
+```
+
+---
+
+## 27. Deprecated Code
+
+### Requirements
+
+- Do not call APIs, methods, or libraries annotated/documented as `@Deprecated`.
+- Do not introduce new usages of a pattern or library the project has already moved away from.
+- Existing deprecated usages touched by the PR should be migrated to the recommended replacement where reasonably in scope.
+- `@Suppress("DEPRECATION")` is a signal, not a fix — it should not be used to silence a deprecation warning without a tracked follow-up.
+
+---
+
+## 28. Documented Code
+
+### Requirements
+
+- Complex business logic, non-obvious algorithms, or workarounds should have a brief explanatory comment or KDoc.
+- Public APIs of reusable classes (managers, repositories, use cases, utils) should have KDoc when behavior isn't self-evident from the name.
+- Comments should explain **why**, not restate **what** the code already makes obvious.
+- Avoid excessive or noisy comments on self-explanatory code.
+
+---
+
+## 29. Interface Segregation
+
+### Requirements
+
+- Split large interfaces by functionality instead of combining unrelated responsibilities into one interface.
+- Every method/parameter on an interface should be relevant to all implementers — don't force unused parameters or methods on every implementation.
+- Avoid "fat interfaces" that make implementers depend on functionality they don't need.
+
+---
+
+## 30. Loose Coupling (Shy Code)
+
+### Requirements
+
+- Depend on abstractions (interfaces) rather than concrete implementations where reasonable.
+- Avoid reaching through multiple objects to access nested internals (e.g. `a.b.c.d.doSomething()` — a Law of Demeter violation).
+- A change in one component should not require cascading changes in unrelated components.
+- Avoid exposing internal implementation details that callers don't need.
+
+---
+
+## 31. DRY Principle
+
+### Requirements
+
+- No near-identical code blocks duplicated across files/functions instead of being extracted into a shared function or class.
+- Repeated business logic, validation, or mapping logic is centralized rather than copy-pasted.
+- Constants/values repeated across the codebase are defined once and reused, not retyped.
+
+*(This complements Section 15 "Reusable Code" and Section 10 "Utils and Helper Classes" — DRY violations in general logic, not just UI components or utilities, belong here.)*
+
+---
+
+## 32. Others
+
+Catch-all for relevant violations that don't map cleanly to any named section above (e.g. a one-off project convention, a build/Gradle concern, or a code smell not covered elsewhere). Reported with a clear explanation rather than forced into an ill-fitting category.
 
 ---
 
