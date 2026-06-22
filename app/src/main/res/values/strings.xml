@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Client Brief Task Generator</string>
+
+    <string name="main_title">Client Brief to Jira CSV</string>
+    <string name="select_pdf_button">Select Client Brief PDF</string>
+    <string name="no_pdf_selected">No PDF selected</string>
+    <string name="generate_jira_csv_button">Generate Jira CSV</string>
+    <string name="export_csv_button">Export CSV for Jira Import</string>
+    <string name="export_pdf_button">Export Human-Readable PDF Report</string>
+    <string name="generated_tickets_count">Generated tickets: %1$d</string>
+    <string name="csv_preview_title">CSV Preview</string>
+    <string name="csv_preview_placeholder">-</string>
+</resources>
