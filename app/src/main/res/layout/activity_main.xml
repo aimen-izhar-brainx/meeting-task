@@ -13,30 +13,30 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Client Brief to Jira CSV"
-            android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6" />
+            android:text="@string/main_title"
+            android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall" />
 
         <Button
             android:id="@+id/selectPdfButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Select Client Brief PDF" />
+            android:text="@string/select_pdf_button" />
 
         <TextView
             android:id="@+id/selectedPdfText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="No PDF selected"
-            android:textColor="@android:color/darker_gray" />
+            android:text="@string/no_pdf_selected"
+            android:textAppearance="@style/TextAppearance.MeetingTask.BodySecondary" />
 
         <Button
             android:id="@+id/generateButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Generate Jira CSV" />
+            android:text="@string/generate_jira_csv_button" />
 
         <Button
             android:id="@+id/exportCsvButton"
@@ -44,7 +44,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:enabled="false"
-            android:text="Export CSV for Jira Import" />
+            android:text="@string/export_csv_button" />
 
         <Button
             android:id="@+id/exportPdfButton"
@@ -52,7 +52,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:enabled="false"
-            android:text="Export Human-Readable PDF Report" />
+            android:text="@string/export_pdf_button" />
 
         <ProgressBar
             android:id="@+id/loadingProgress"
@@ -68,30 +68,29 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:textColor="@android:color/holo_red_dark" />
+            android:textAppearance="@style/TextAppearance.MeetingTask.Error" />
 
         <TextView
             android:id="@+id/ticketCountText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Generated tickets: 0"
-            android:textStyle="bold" />
+            android:textAppearance="@style/TextAppearance.MeetingTask.TitleBold" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="CSV Preview"
-            android:textStyle="bold" />
+            android:text="@string/csv_preview_title"
+            android:textAppearance="@style/TextAppearance.MeetingTask.TitleBold" />
 
         <TextView
             android:id="@+id/csvPreviewText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:background="@android:color/transparent"
-            android:fontFamily="monospace"
-            android:text="-" />
+            android:background="@color/transparent"
+            android:text="@string/csv_preview_placeholder"
+            android:textAppearance="@style/TextAppearance.MeetingTask.Monospace" />
     </LinearLayout>
 </ScrollView>

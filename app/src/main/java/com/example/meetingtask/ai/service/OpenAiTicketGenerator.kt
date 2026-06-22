@@ -1,8 +1,12 @@
 package com.example.meetingtask.ai.service
 
 import com.example.meetingtask.ai.mapper.PromptBuilder
-import org.json.JSONArray
-import org.json.JSONObject
+import com.example.meetingtask.data.mapper.AiTicketMapper
+import com.example.meetingtask.data.model.openai.OpenAiChatRequestDto
+import com.example.meetingtask.data.model.openai.OpenAiChatResponseDto
+import com.example.meetingtask.data.model.openai.OpenAiMessageDto
+import com.example.meetingtask.domain.model.JiraImportTicket
+import kotlinx.serialization.json.Json
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
@@ -14,65 +18,83 @@ class OpenAiTicketGenerator(
     private val promptBuilder: PromptBuilder = PromptBuilder()
 ) : AiTicketGenerator {
 
-    override fun generateTicketJson(rawClientBrief: String): String {
+    private val json = Json {
+        ignoreUnknownKeys = true
+        explicitNulls = false
+    }
+
+    override fun generateTickets(rawClientBrief: String): List<JiraImportTicket> {
         require(apiKey.isNotBlank()) { "OPENAI_API_KEY is missing. Add it to local.properties." }
 
-        val requestPayload = JSONObject()
-            .put("model", "gpt-4.1-mini")
-            .put("response_format", JSONObject().put("type", "json_object"))
-            .put(
-                "messages",
-                JSONArray()
-                    .put(
-                        JSONObject()
-                            .put("role", "system")
-                            .put(
-                                "content",
-                                "Return only JSON for Jira CSV import. Include tickets array with strict fields: summary, issue_type, description, epic_name, parent_summary."
-                            )
-                    )
-                    .put(
-                        JSONObject()
-                            .put("role", "user")
-                            .put("content", promptBuilder.buildPrompt(rawClientBrief))
-                    )
+        val requestPayload = OpenAiChatRequestDto(
+            model = OpenAiConstants.DEFAULT_MODEL,
+            messages = listOf(
+                OpenAiMessageDto(
+                    role = OpenAiConstants.ROLE_SYSTEM,
+                    content = OpenAiConstants.SYSTEM_PROMPT
+                ),
+                OpenAiMessageDto(
+                    role = OpenAiConstants.ROLE_USER,
+                    content = promptBuilder.buildPrompt(rawClientBrief)
+                )
             )
+        )
 
-        val connection = (URL("https://api.openai.com/v1/chat/completions").openConnection() as HttpURLConnection).apply {
-            requestMethod = "POST"
-            connectTimeout = 30000
-            readTimeout = 60000
-            doOutput = true
-            setRequestProperty("Authorization", "Bearer $apiKey")
-            setRequestProperty("Content-Type", "application/json")
-        }
+        val connection = URL(OpenAiConstants.CHAT_COMPLETIONS_URL)
+            .openConnection()
+            .let { connection ->
+                connection as? HttpURLConnection
+                    ?: throw IllegalStateException("Expected HTTP connection for OpenAI API request.")
+            }
+            .apply {
+                requestMethod = OpenAiConstants.HTTP_METHOD_POST
+                connectTimeout = OpenAiConstants.CONNECT_TIMEOUT_MS
+                readTimeout = OpenAiConstants.READ_TIMEOUT_MS
+                doOutput = true
+                setRequestProperty(
+                    OpenAiConstants.HEADER_AUTHORIZATION,
+                    "${OpenAiConstants.AUTHORIZATION_BEARER_PREFIX}$apiKey"
+                )
+                setRequestProperty(OpenAiConstants.HEADER_CONTENT_TYPE, OpenAiConstants.CONTENT_TYPE_JSON)
+            }
 
         try {
             OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { writer ->
-                writer.write(requestPayload.toString())
+                writer.write(json.encodeToString(OpenAiChatRequestDto.serializer(), requestPayload))
             }
 
             val statusCode = connection.responseCode
-            val responseText = readResponse(connection, statusCode in 200..299)
-            if (statusCode !in 200..299) {
+            val responseText = readResponse(
+                connection,
+                statusCode in OpenAiConstants.HTTP_SUCCESS_MIN..OpenAiConstants.HTTP_SUCCESS_MAX
+            )
+            if (statusCode !in OpenAiConstants.HTTP_SUCCESS_MIN..OpenAiConstants.HTTP_SUCCESS_MAX) {
                 throw IllegalStateException("OpenAI API error ($statusCode): $responseText")
             }
 
-            val root = JSONObject(responseText)
-            val content = root
-                .getJSONArray("choices")
-                .getJSONObject(0)
-                .getJSONObject("message")
-                .getString("content")
-
-            return normalizeTicketJson(content)
+            return AiTicketMapper.parseTicketResponse(extractMessageContent(responseText))
         } finally {
             connection.disconnect()
         }
     }
 
+    private fun extractMessageContent(responseText: String): String {
+        val response = json.decodeFromString(OpenAiChatResponseDto.serializer(), responseText)
+        val choices = response.choices
+        if (choices.isEmpty()) {
+            throw IllegalStateException("OpenAI response contains no choices.")
+        }
+
+        val content = choices.first().message?.content?.trim().orEmpty()
+        if (content.isBlank()) {
+            throw IllegalStateException("OpenAI response is missing message content.")
+        }
+        return content
+    }
+
     private fun readResponse(connection: HttpURLConnection, success: Boolean): String {
         val stream = if (success) connection.inputStream else connection.errorStream
+        if (stream == null) return ""
         return BufferedReader(InputStreamReader(stream, Charsets.UTF_8)).use { reader ->
             buildString {
                 var line = reader.readLine()
@@ -81,40 +103,6 @@ class OpenAiTicketGenerator(
                     line = reader.readLine()
                 }
             }
-        }
-    }
-
-    private fun normalizeTicketJson(content: String): String {
-        val cleaned = content
-            .replace("```json", "")
-            .replace("```", "")
-            .trim()
-
-        val parsed = JSONObject(cleaned)
-        val ticketsRaw = parsed.optJSONArray("tickets") ?: JSONArray()
-        val normalizedTickets = JSONArray()
-
-        for (i in 0 until ticketsRaw.length()) {
-            val raw = ticketsRaw.optJSONObject(i) ?: JSONObject()
-            val issueType = normalizeIssueType(raw.optString("issue_type", "Task"))
-            normalizedTickets.put(
-                JSONObject()
-                    .put("summary", raw.optString("summary", "NEEDS CLARIFICATION"))
-                    .put("issue_type", issueType)
-                    .put("description", raw.optString("description", "NEEDS CLARIFICATION"))
-                    .put("epic_name", raw.optString("epic_name", ""))
-                    .put("parent_summary", raw.optString("parent_summary", ""))
-            )
-        }
-
-        return JSONObject().put("tickets", normalizedTickets).toString()
-    }
-
-    private fun normalizeIssueType(issueType: String): String {
-        return when (issueType.trim().lowercase()) {
-            "epic" -> "Epic"
-            "story", "user story", "user_story" -> "Story"
-            else -> "Task"
         }
     }
 }
