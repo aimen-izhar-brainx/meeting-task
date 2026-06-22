@@ -45,7 +45,7 @@ const BEST_PRACTICE_SECTIONS = [
   },
 ];
 
-const ALWAYS_APPLICABLE_CHECKLIST_IDS = new Set(['title_description', 'single_responsibility']);
+const ALWAYS_APPLICABLE_CHECKLIST_IDS = new Set(['title_description', 'single_responsibility', 'pr_size_lines_of_code', 'others']);
 
 // File extensions/paths this reviewer treats as "relevant changed code" for static scanning and snippet inclusion.
 function isRelevantFile(f) {
@@ -171,6 +171,18 @@ const STATIC_RULES = [
     standard: 'Performance and Recomposition Review (Compose)',
     fix: 'Hoist the transformation out with `remember(key) { derivedStateOf { ... } }` so it only recomputes when the source data changes.',
   },
+  {
+    id: 'deprecated_code',
+    pattern: /@Suppress\(\s*"DEPRECATION"\s*\)/,
+    issue: 'Deprecation warning suppressed via `@Suppress("DEPRECATION")` instead of migrating to the replacement API.',
+    standard: 'Deprecated Code',
+  },
+  {
+    id: 'databinding_viewbinding_usage',
+    pattern: /\bfindViewById\s*[<(]/,
+    issue: '`findViewById` used for a view reference instead of ViewBinding/DataBinding.',
+    standard: 'Proper Usage of DataBinding / ViewBinding',
+  },
 ];
 
 function readFile(path) {
@@ -268,10 +280,12 @@ function inferApplicability(sectionId, changedFiles, isChecklist) {
     'dependency_injection_consistency', 'coroutine_flow_best_practices',
     'localization_internationalization', 'navigation_safety', 'memory_leak_prevention',
     'compose_performance_recomposition',
+    'databinding_viewbinding_usage', 'early_exit_guard_clauses', 'deprecated_code',
+    'code_documentation', 'interface_segregation', 'loose_coupling_shy_code', 'dry_principle',
     'bp_modern_app_architecture', 'bp_scalability_maintainability', 'bp_performance', 'bp_optimized_code_structure',
   ]);
 
-  const metaSections = new Set(['single_responsibility', 'title_description']);
+  const metaSections = new Set(['single_responsibility', 'title_description', 'pr_size_lines_of_code', 'others']);
 
   if (metaSections.has(sectionId)) return true;
   if (sectionId === 'managers_services' || sectionId === 'model_mapping_defaults') return hasKotlin;
@@ -488,6 +502,19 @@ function getChangedFilesList(filesOutput) {
   return filesOutput.split('\n').map(f => f.trim()).filter(Boolean);
 }
 
+const MAX_PR_LINES = Number(process.env.MAX_PR_LINES || 1500);
+
+function countChangedLines(diff) {
+  let added = 0;
+  let removed = 0;
+  for (const line of diff.split('\n')) {
+    if (line.startsWith('+++') || line.startsWith('---')) continue;
+    if (line.startsWith('+')) added += 1;
+    else if (line.startsWith('-')) removed += 1;
+  }
+  return { added, removed, total: added + removed };
+}
+
 function getChangedKotlinSnippets(changedFiles) {
   const relevantFiles = changedFiles.filter(f => isRelevantFile(f) && fs.existsSync(f));
   const chunks = [];
@@ -635,6 +662,20 @@ async function main() {
   const changedFiles = getChangedFilesList(filesOutput);
   const fileSnippets = getChangedKotlinSnippets(changedFiles);
   const staticFindings = parseDiffAddedLines(diff);
+
+  const lineCount = countChangedLines(diff);
+  if (lineCount.total > MAX_PR_LINES) {
+    staticFindings.push({
+      section_id: 'pr_size_lines_of_code',
+      file: 'PR-wide',
+      line: 0,
+      issue: `PR changes ${lineCount.total} lines (added ${lineCount.added}, removed ${lineCount.removed}), exceeding the ${MAX_PR_LINES}-line guideline.`,
+      standard: 'PR Size (Lines of Code Limit)',
+      why_violation: 'Large PRs are harder to review thoroughly and increase the chance of missed issues. Consider splitting this into smaller, independently reviewable PRs.',
+      source: 'static_scan',
+    });
+  }
+  console.log(`PR diff size: +${lineCount.added} -${lineCount.removed} (${lineCount.total} total, limit ${MAX_PR_LINES})`);
 
   const checklistSectionDefs = parseChecklistSections(checklist);
   const bpSectionDefs = BEST_PRACTICE_SECTIONS.map(s => ({ ...s, group: 'best_practices' }));

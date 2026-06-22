@@ -259,3 +259,78 @@ sections:
       - Uses stable state objects.
       - Uses remember appropriately for values that shouldn't be recomputed every recomposition.
       - Avoids creating collections (filter/map/sorted) inline inside LazyColumn/LazyRow item builders during recomposition.
+
+  - id: pr_size_lines_of_code
+    title: PR Size (Lines of Code Limit)
+    description: Total changed lines in the PR should stay within a reviewable limit (max 1500).
+    checks:
+      - Total added + removed lines in the PR diff does not exceed 1500.
+      - Unrelated large changes (generated files, lockfiles, formatting-only diffs) are not inflating the line count unnecessarily.
+      - Oversized changes are split into smaller, independently reviewable PRs where possible.
+
+  - id: databinding_viewbinding_usage
+    title: Proper Usage of DataBinding / ViewBinding
+    description: XML-backed screens should use ViewBinding/DataBinding consistently instead of findViewById, with bindings cleared on destroy. Not applicable to Java-only projects.
+    checks:
+      - Uses ViewBinding or DataBinding instead of findViewById for view references.
+      - Fragment ViewBinding references are cleared in onDestroyView (_binding = null).
+      - Does not mix ViewBinding and DataBinding inconsistently within the same screen/module without justification.
+      - Keeps DataBinding XML expressions presentation-only; avoids embedding business logic in binding expressions/adapters.
+      - Avoids holding a binding reference longer than the view's lifecycle.
+
+  - id: early_exit_guard_clauses
+    title: Use Early Exit (Guard Clauses)
+    description: Prefer early returns/guard clauses over deeply nested conditional blocks.
+    checks:
+      - Uses guard clauses (early return) for invalid/edge-case conditions instead of wrapping the main logic in a large if block.
+      - Avoids deeply nested if/else chains where a guard clause would flatten the logic.
+      - Keeps the happy path unindented and easy to follow.
+
+  - id: deprecated_code
+    title: Deprecated Code
+    description: PR should not introduce or continue using deprecated APIs, libraries, or patterns.
+    checks:
+      - Does not call APIs/methods annotated or documented as @Deprecated.
+      - Does not add new usages of a library/pattern the project has already moved away from.
+      - Existing deprecated usages touched by the PR are migrated to the recommended replacement where reasonably in scope.
+      - Does not use @Suppress("DEPRECATION") as a substitute for migrating to the replacement API.
+
+  - id: code_documentation
+    title: Documented Code
+    description: Complex or non-obvious logic should be documented so future maintainers can follow it.
+    checks:
+      - Complex business logic, algorithms, or non-obvious workarounds have a brief explanatory comment or KDoc.
+      - Public APIs of reusable classes (managers, repositories, use cases, utils) have KDoc where behavior isn't self-evident from the name.
+      - Comments explain why, not just restate what the code already says.
+      - Avoids excessive or noisy comments on self-explanatory code.
+
+  - id: interface_segregation
+    title: Interface Segregation
+    description: Interfaces should be small and focused; clients should not depend on methods/parameters they don't use.
+    checks:
+      - Interfaces are split by functionality rather than combined into one large interface.
+      - Interface methods/parameters are all relevant to implementers; no unused parameters forced on every implementation.
+      - Avoids forcing classes to implement methods they don't need (fat interfaces).
+
+  - id: loose_coupling_shy_code
+    title: Loose Coupling (Shy Code)
+    description: Code should minimize knowledge of and dependency on other components' internals.
+    checks:
+      - Classes/components depend on abstractions (interfaces) rather than concrete implementations where reasonable.
+      - Avoids reaching through multiple objects to access nested internals (Law of Demeter violations, e.g. a.b.c.d.doSomething()).
+      - Changes in one component do not require cascading changes in unrelated components.
+      - Avoids exposing internal implementation details that callers don't need.
+
+  - id: dry_principle
+    title: DRY Principle
+    description: Code should avoid duplicated logic; repeated blocks should be extracted into a shared, reusable place.
+    checks:
+      - No near-identical code blocks duplicated across files/functions instead of being extracted into a shared function/class.
+      - Repeated business logic, validation, or mapping is centralized rather than copy-pasted.
+      - Constants/values repeated across the codebase are defined once and reused.
+
+  - id: others
+    title: Others
+    description: Catch-all for relevant violations that do not map cleanly to any other section.
+    checks:
+      - Any other deviation from general code quality, safety, or project conventions not covered by the named sections above is reported here with a clear explanation.
